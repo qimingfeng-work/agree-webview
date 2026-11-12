@@ -1,10 +1,14 @@
-# agree
+# agree webview
 
-export android webview from chromium source code as aar sdk
+**agree webview** is an embeddable WebView AAR SDK built directly from Chromium source code. Instead of relying on the device's system WebView (whose version and behaviour vary by Android release, vendor skin and Play Services updates), it packs the Chromium kernel — `libwebviewchromium.so` — inside the host app itself as a standard Android AAR. The app gets a fixed, known engine that renders identically on every supported device.
 
-Chromium **M119** (119.0.6045.214) baseline, minimum Android **7.0 (API 24)**.
+- **Kernel**: Chromium **M119** (119.0.6045.214), official release build, dual ABI in one package (`arm64-v8a` + `armeabi-v7a`)
+- **API**: the full `android.webkit.*` surface is mirrored under `agree.webkit.*` — swap the import and existing WebView code keeps working unchanged
+- **Rendering**: hardware-accelerated, Vulkan on Android 10+ (API 29) with an automatic GL/EGL fallback for Android 7–9 (API 24–28) devices
+- **Min platform**: Android **7.0 (API 24)**
+- **Delivery**: a **5-AAR set** — one main AAR (kernel + assets) plus 4 auxiliary resource AARs carrying the Chromium R classes (all required)
 
-# How to use agree
+# How to use agree webview
 
 ## 1. Add the AAR files into your project
 
