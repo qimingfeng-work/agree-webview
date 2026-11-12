@@ -1,0 +1,22 @@
+diff --git a/android_webview/support_library/boundary_interfaces/BUILD.gn b/android_webview/support_library/boundary_interfaces/BUILD.gn
+index a7e8d2a74a..9dfd258598 100644
+--- a/android_webview/support_library/boundary_interfaces/BUILD.gn
++++ b/android_webview/support_library/boundary_interfaces/BUILD.gn
+@@ -49,7 +49,16 @@ android_library("boundary_interface_java") {
+   # build when we mirror this into AndroidX. We are only permitted to depend on
+   # core Android classes and other AndroidX classes (must be in the androidx.*
+   # package name).
+-  deps = [ "//third_party/androidx:androidx_annotation_annotation_java" ]
++  #
++  # agree: patch 001 把 ProfileBoundaryInterface 的 import 改成了
++  # agree.webkit.*（CookieManager/WebStorage/
++  # WebResourceResponse/ServiceWorkerController/GeolocationPermissions），
++  # 这些类由 agree 的 webkit_glue_java 提供，必须加进 deps，
++  # 否则 javac 报 symbol not found。
++  deps = [
++    "//android_webview/agree:webkit_glue_java",
++    "//third_party/androidx:androidx_annotation_annotation_java",
++  ]
+ }
+ 
+ android_apk("boundary_interface_example_apk") {

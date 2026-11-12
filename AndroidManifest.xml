@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Copyright 2013 The Chromium Authors. All rights reserved.
+
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+-->
+
+<!--
+  agree 独立 AAR 的 manifest。
+
+  与原生 WebView 的关键差异：原生 WebView 由系统 framework 安装为系统组件，
+  本文件描述的是要打进 AAR、由宿主 App 合并的 manifest。
+
+  离线参考模板：android_webview/nonembedded/java/AndroidManifest.xml（jinja）。
+
+  注意以下几点，改动前请先读：
+  1. SandboxedProcessService 必须 exported=true 且带 externalService="true"。
+     系统通过 bindServiceAsUser 绑定沙箱进程来拉起 renderer，
+     exported=false 会让绑定失败，表现为页面白屏 / 渲染进程起不来。
+  2. NUM_SANDBOXED_SERVICES 必须与下面声明的 service 数量一致。
+     原生 WebView 用 40，这里保持一致，否则多 WebView 实例场景下
+     分不到 renderer 进程。
+  3. 不要声明 RECORD_VIDEO —— 该权限在 Android 中从未存在，只会触发 lint 报错。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="agree.webkit">
+
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <!-- WebRTC / 网页录音 -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.CAMERA" />
+  <!-- 渲染保活 -->
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+  <application android:hardwareAccelerated="true">
+
+    <!-- 沙箱渲染进程数量，必须与下方声明的 SandboxedProcessService 条数一致 -->
+    <meta-data android:name="org.chromium.content.browser.NUM_SANDBOXED_SERVICES"
+               android:value="40"/>
+
+    <service android:name="org.chromium.content.app.SandboxedProcessService0"
+             android:process=":sandboxed_process0"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService1"
+             android:process=":sandboxed_process1"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService2"
+             android:process=":sandboxed_process2"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService3"
+             android:process=":sandboxed_process3"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService4"
+             android:process=":sandboxed_process4"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService5"
+             android:process=":sandboxed_process5"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService6"
+             android:process=":sandboxed_process6"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService7"
+             android:process=":sandboxed_process7"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService8"
+             android:process=":sandboxed_process8"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService9"
+             android:process=":sandboxed_process9"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService10"
+             android:process=":sandboxed_process10"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService11"
+             android:process=":sandboxed_process11"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService12"
+             android:process=":sandboxed_process12"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService13"
+             android:process=":sandboxed_process13"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService14"
+             android:process=":sandboxed_process14"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService15"
+             android:process=":sandboxed_process15"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService16"
+             android:process=":sandboxed_process16"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService17"
+             android:process=":sandboxed_process17"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService18"
+             android:process=":sandboxed_process18"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService19"
+             android:process=":sandboxed_process19"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService20"
+             android:process=":sandboxed_process20"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService21"
+             android:process=":sandboxed_process21"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService22"
+             android:process=":sandboxed_process22"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService23"
+             android:process=":sandboxed_process23"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService24"
+             android:process=":sandboxed_process24"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService25"
+             android:process=":sandboxed_process25"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService26"
+             android:process=":sandboxed_process26"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService27"
+             android:process=":sandboxed_process27"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService28"
+             android:process=":sandboxed_process28"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService29"
+             android:process=":sandboxed_process29"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService30"
+             android:process=":sandboxed_process30"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService31"
+             android:process=":sandboxed_process31"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService32"
+             android:process=":sandboxed_process32"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService33"
+             android:process=":sandboxed_process33"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService34"
+             android:process=":sandboxed_process34"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService35"
+             android:process=":sandboxed_process35"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService36"
+             android:process=":sandboxed_process36"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService37"
+             android:process=":sandboxed_process37"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService38"
+             android:process=":sandboxed_process38"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+    <service android:name="org.chromium.content.app.SandboxedProcessService39"
+             android:process=":sandboxed_process39"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+
+    <meta-data android:name="org.chromium.content.browser.NUM_PRIVILEGED_SERVICES"
+               android:value="0"/>
+
+    <!-- JS Execution Sandbox -->
+    <service android:name="org.chromium.android_webview.js_sandbox.service.JsSandboxService0"
+             android:process=":js_sandboxed_process0"
+             android:isolatedProcess="true"
+             android:exported="true"
+             android:externalService="true"
+             android:visibleToInstantApps="true" />
+  </application>
+</manifest>

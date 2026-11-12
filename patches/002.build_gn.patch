@@ -1,0 +1,244 @@
+diff --git a/android_webview/BUILD.gn b/android_webview/BUILD.gn
+index 263e642dcb..fcda84736f 100644
+--- a/android_webview/BUILD.gn
++++ b/android_webview/BUILD.gn
+@@ -344,10 +344,59 @@ if (android_64bit_target_cpu && !skip_secondary_abi_for_cq) {
+ }
+ 
+ # The shared library used by standalone WebView.
++# ==============================================================================
++# agree 定制：draw fn（GL / Vulkan functor）的 native 实现。
++#
++# 背景：
++#   MyDrawFunctor.java 通过 @JNINamespace("draw_fn") 声明了 7 个 native 方法
++#   （getDrawFnFunctionTable / init / setSurface / resizeSurface /
++#   setOverlaysSurface / sync / draw）。M119 的 libwebviewchromium 不含任何
++#   draw_fn 实现，若不把这些 .cc 链进去，WebView 初始化阶段调用
++#   MyDrawFunctor.getDrawFnFunctionTable() 就会抛 UnsatisfiedLinkError。
++#
++# 目录布局：
++#   agree 仓库需要整体拷贝到 src/android_webview/agree/，
++#   因为 draw_functor.cc 里的 include 写死了
++#   "android_webview/agree/java/src/draw_fn/xxx.h"。
++#
++# JNI 头：
++#   draw_functor.cc 引用
++#   "android_webview/agree/draw_fn_impl_jni_headers/MyDrawFunctor_jni.h"，
++#   该头文件由 ../agree/BUILD.gn 里的 generate_jni("draw_fn_impl_jni_headers")
++#   生成（target_gen_dir 落在 android_webview/agree/ 下），
++#   所以这里必须依赖它。
++# ==============================================================================
++source_set("agree_draw_fn_native") {
++  sources = [
++    "agree/java/src/draw_fn/allocator.cc",
++    "agree/java/src/draw_fn/allocator.h",
++    "agree/java/src/draw_fn/draw_functor.cc",
++    "agree/java/src/draw_fn/draw_functor.h",
++    "agree/java/src/draw_fn/overlays_manager.cc",
++    "agree/java/src/draw_fn/overlays_manager.h",
++  ]
++
++  deps = [
++    # MyDrawFunctor_jni.h 的来源
++    "//android_webview/agree:draw_fn_impl_jni_headers",
++    "//android_webview/public",  # android_webview/public/browser/draw_fn.h
++    "//base",
++    "//gpu/vulkan",
++    "//gpu/vulkan/init",
++    "//gpu/vulkan/init:skia",
++    "//skia",
++    "//ui/gl",
++  ]
++}
++
+ template("libwebviewchromium_tmpl") {
+   shared_library_with_jni(target_name) {
+     forward_variables_from(invoker, "*")
+     deps = [
++      # agree 定制：draw fn 的 native 实现（GL/Vulkan functor）。
++      # MyDrawFunctor.java 声明的 7 个 native 方法由这里提供，
++      # 缺了会在 WebView 初始化时抛 UnsatisfiedLinkError。
++      ":agree_draw_fn_native",
+       "//android_webview/lib",
+       "//android_webview/lib:webview_entry_point",
+       "//android_webview/nonembedded",
+@@ -996,9 +1045,38 @@ android_resources("resources") {
+     "java/res/drawable-xxxhdpi/ic_play_circle_outline_black_48dp.png",
+     "java/res/raw/histograms_allowlist.txt",
+   ]
++
+   deps = [ ":strings_grd" ]
+ }
+ 
++# ==============================================================================
++# agree 定制：WebView glue 层资源
++#
++# 原生 WebView 作为系统组件时，js_prompt / webview_find 这些资源由系统
++# framework-res 提供，Chromium 只需引用资源 id。agree 是独立 AAR，
++# 宿主 App 里没有这些 id，必须自己打包一份并生成自己的 R 类，
++# 否则 JsDialogHelper / FindActionModeCallback 运行时抛 Resources$NotFoundException。
++#
++# 这三个 xml 定义的 id 与 agree Java 代码一一对应：
++#   layout/js_prompt.xml      -> R.id.message, R.id.value   (JsDialogHelper)
++#   layout/webview_find.xml   -> R.id.edit, R.id.matches    (FindActionModeCallback)
++#   menu/webview_find.xml     -> R.id.find_prev, R.id.find_next (FindActionModeCallback)
++#
++# custom_package 必须与 agree 源码包名一致：JsDialogHelper 等位于
++# agree.webkit，且未显式 import R，依赖同包解析。
++# ==============================================================================
++android_resources("webkit_glue_resources") {
++  sources = [
++    "java/res_webkit/layout/js_prompt.xml",
++    "java/res_webkit/layout/webview_find.xml",
++    "java/res_webkit/menu/webview_find.xml",
++  ]
++
++  deps = []
++
++  custom_package = "agree.webkit"
++}
++
+ grit("generate_webui_resources") {
+   enable_input_discovery_for_gn_analyze = false
+   defines =
+diff --git a/android_webview/glue/BUILD.gn b/android_webview/glue/BUILD.gn
+index 91921d6cf7..b8d0d4ccd1 100644
+--- a/android_webview/glue/BUILD.gn
++++ b/android_webview/glue/BUILD.gn
+@@ -14,6 +14,7 @@ android_library("glue_java") {
+     "//android_webview:browser_java",
+     "//android_webview:common_java",
+     "//android_webview:resources",
++    "//android_webview/agree:webkit_glue_java",
+     "//android_webview/support_library/boundary_interfaces:boundary_interface_java",
+     "//android_webview/support_library/callback:callback_java",
+     "//base:base_java",
+@@ -25,6 +26,7 @@ android_library("glue_java") {
+     "//components/version_info/android:version_constants_java",
+     "//content/public/android:content_java",
+     "//net/android:net_java",
++    "//third_party/android_deps:com_android_support_support_annotations_java",
+     "//third_party/androidx:androidx_annotation_annotation_java",
+     "//ui/android:ui_no_recycler_view_java",
+     "//url:gurl_java",
+@@ -85,4 +87,8 @@ android_library("glue_java") {
+     "java/src/com/android/webview/chromium/WebViewRenderProcessClientAdapter.java",
+     "java/src/com/android/webview/chromium/WebkitToSharedGlueConverter.java",
+   ]
++
++  #srcjar_deps = [
++  #  "//android_webview:libwebviewchromium__jni_registration",
++  #]
+ }
+diff --git a/android_webview/support_library/BUILD.gn b/android_webview/support_library/BUILD.gn
+index daca5edc16..ac00599d68 100644
+--- a/android_webview/support_library/BUILD.gn
++++ b/android_webview/support_library/BUILD.gn
+@@ -37,6 +37,7 @@ android_library("support_lib_glue_java") {
+   deps = [
+     "//android_webview:browser_java",
+     "//android_webview:common_java",
++    "//android_webview/agree:webkit_glue_java",
+     "//android_webview/glue:glue_java",
+     "//android_webview/support_library/boundary_interfaces:boundary_interface_java",
+     "//android_webview/support_library/callback:callback_java",
+diff --git a/build/android/gyp/dist_aar.py b/build/android/gyp/dist_aar.py
+index 507d0c3d83..15dcaf0d29 100755
+--- a/build/android/gyp/dist_aar.py
++++ b/build/android/gyp/dist_aar.py
+@@ -85,6 +85,16 @@ def main(args):
+                       'ABI must be specified.')
+   parser.add_argument('--abi',
+                       help='ABI (e.g. armeabi-v7a) for native libraries.')
++  parser.add_argument(
++      '--abi-mapping',
++      default='',
++      help='GN list of "path/to/lib.so=abi-name" pairs, used to place each '
++      'native library under its own jni/<abi> directory in the AAR. '
++      'This allows producing a multi-ABI AAR in one step. Libraries listed '
++      'here take precedence over --abi; libraries not listed fall back to '
++      '--abi. Example: '
++      '"--abi-mapping=[\\"out/arm64/libwebviewchromium.so=arm64-v8a\\",'
++      '\\"out/arm/libwebviewchromium.so=armeabi-v7a\\"]"')
+   parser.add_argument(
+       '--jar-excluded-globs',
+       help='GN-list of globs for paths to exclude in jar.')
+@@ -97,7 +107,7 @@ def main(args):
+ 
+   options = parser.parse_args(args)
+ 
+-  if options.native_libraries and not options.abi:
++  if options.native_libraries and not options.abi and not options.abi_mapping:
+     parser.error('You must provide --abi if you have native libs')
+ 
+   options.jars = action_helpers.parse_gn_list(options.jars)
+@@ -108,6 +118,17 @@ def main(args):
+       options.proguard_configs)
+   options.native_libraries = action_helpers.parse_gn_list(
+       options.native_libraries)
++
++  # Parse --abi-mapping into {absolute_or_given_path: abi}. Entries are
++  # "path=abi" strings. Used to place each native library into its own
++  # jni/<abi>/ directory so a single AAR can carry several ABIs.
++  abi_mapping = {}
++  for entry in action_helpers.parse_gn_list(options.abi_mapping or ''):
++    if '=' not in entry:
++      parser.error('--abi-mapping entries must look like "lib.so=abi-name", '
++                   'got: %s' % entry)
++    lib_path, _, abi = entry.rpartition('=')
++    abi_mapping[os.path.normpath(lib_path)] = abi
+   options.jar_excluded_globs = action_helpers.parse_gn_list(
+       options.jar_excluded_globs)
+   options.jar_included_globs = action_helpers.parse_gn_list(
+@@ -150,9 +171,17 @@ def main(args):
+ 
+         for native_library in options.native_libraries:
+           libname = os.path.basename(native_library)
++          # Multi-ABI support: a library listed in --abi-mapping goes into
++          # its own jni/<abi>/ directory; anything else falls back to the
++          # single --abi value (original single-ABI behaviour).
++          abi = abi_mapping.get(os.path.normpath(native_library)) or \
++              options.abi
++          if not abi:
++            parser.error(
++                'Native library %s has no ABI: pass --abi or list it in '
++                '--abi-mapping.' % native_library)
+           zip_helpers.add_to_zip_hermetic(z,
+-                                          os.path.join('jni', options.abi,
+-                                                       libname),
++                                          os.path.join('jni', abi, libname),
+                                           src_path=native_library)
+     except:
+       os.unlink(staging_file.name)
+diff --git a/build/config/android/rules.gni b/build/config/android/rules.gni
+index 4b2024518f..6219af72df 100644
+--- a/build/config/android/rules.gni
++++ b/build/config/android/rules.gni
+@@ -1716,10 +1716,23 @@ if (enable_java_templates && is_android) {
+         _rebased_native_libraries =
+             rebase_path(invoker.native_libraries, root_build_dir)
+ 
+-        args += [
+-          "--native-libraries=$_rebased_native_libraries",
+-          "--abi=$android_app_abi",
+-        ]
++        args += [ "--native-libraries=$_rebased_native_libraries" ]
++        if (defined(invoker.abi_mapping) && invoker.abi_mapping != []) {
++          # Multi-ABI: abi_mapping is a LIST of scopes of the form
++          #   [ { lib = "path/to/lib.so", abi = "arm64-v8a" }, ... ]
++          # Each library gets its own jni/<abi>/ directory in the AAR.
++          # (GN 2121 foreach does not iterate scopes; BUILD.gn passes a
++          # scope list and the loop accesses the .lib / .abi members.)
++          _abi_mapping = invoker.abi_mapping
++          _rebased_abi_mapping = []
++          foreach(_lib, _abi_mapping) {
++            _rebased_abi_mapping +=
++                [ rebase_path(_lib.lib, root_build_dir) + "=" + _lib.abi ]
++          }
++          args += [ "--abi-mapping=$_rebased_abi_mapping" ]
++        } else {
++          args += [ "--abi=$android_app_abi" ]
++        }
+       }
+       if (defined(invoker.jar_excluded_patterns)) {
+         args += [ "--jar-excluded-globs=${invoker.jar_excluded_patterns}" ]

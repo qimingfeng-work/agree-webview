@@ -1,0 +1,11 @@
+diff --git a/android_webview/glue/java/src/com/android/webview/chromium/WebViewChromiumFactoryProvider.java b/android_webview/glue/java/src/com/android/webview/chromium/WebViewChromiumFactoryProvider.java
+--- a/android_webview/glue/java/src/com/android/webview/chromium/WebViewChromiumFactoryProvider.java
++++ b/android_webview/glue/java/src/com/android/webview/chromium/WebViewChromiumFactoryProvider.java
+@@ -17,6 +17,7 @@
+ import android.os.SystemClock;
+ import android.os.UserManager;
+ import android.provider.Settings;
++import android.webkit.WebViewDelegateWrapper;
+ import agree.webkit.CookieManager;
+ import agree.webkit.GeolocationPermissions;
+ import agree.webkit.PacProcessor;

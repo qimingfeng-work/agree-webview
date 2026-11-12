@@ -1,0 +1,53 @@
+diff --git a/android_webview/glue/java/src/com/android/webview/chromium/WebViewChromium.java b/android_webview/glue/java/src/com/android/webview/chromium/WebViewChromium.java
+diff --git a/android_webview/glue/java/src/com/android/webview/chromium/SharedWebViewContentsClientAdapter.java b/android_webview/glue/java/src/com/android/webview/chromium/SharedWebViewContentsClientAdapter.java
+--- a/android_webview/glue/java/src/com/android/webview/chromium/WebViewChromium.java
++++ b/android_webview/glue/java/src/com/android/webview/chromium/WebViewChromium.java
+@@ -2348,11 +2348,11 @@
+     }
+ 
+     @Override
+-    public void setTextClassifier(TextClassifier textClassifier) {
++    public void setTextClassifier(Object textClassifier) {
+         try (TraceEvent event =
+                         TraceEvent.scoped("WebView.APICall.Framework.SET_TEXT_CLASSIFIER")) {
+             recordWebViewApiCall(ApiCall.SET_TEXT_CLASSIFIER);
+-            mAwContents.setTextClassifier(textClassifier);
++            mAwContents.setTextClassifier((TextClassifier) textClassifier);
+         }
+     }
+ 
+@@ -2365,7 +2365,6 @@
+         }
+     }
+ 
+-    @Override
+     public void autofill(final SparseArray<AutofillValue> values) {
+         mFactory.startYourEngines(false);
+         if (checkNeedsPost()) {
+@@ -2382,7 +2381,6 @@
+         }
+     }
+ 
+-    @Override
+     public void onProvideAutofillVirtualStructure(final ViewStructure structure, final int flags) {
+         mFactory.startYourEngines(false);
+         if (checkNeedsPost()) {
+--- a/android_webview/glue/java/src/com/android/webview/chromium/SharedWebViewContentsClientAdapter.java
++++ b/android_webview/glue/java/src/com/android/webview/chromium/SharedWebViewContentsClientAdapter.java
+@@ -21,7 +21,6 @@
+ import org.chromium.base.Callback;
+ import org.chromium.base.Log;
+ import org.chromium.base.TraceEvent;
+-import org.chromium.base.compat.ApiHelperForM;
+ import org.chromium.components.embedder_support.util.WebResourceResponseInfo;
+ import org.chromium.support_lib_boundary.util.Features;
+ import org.chromium.support_lib_callback_glue.SupportLibWebViewContentsClientAdapter;
+@@ -120,7 +119,7 @@
+             if (mSupportLibClient.isFeatureAvailable(Features.VISUAL_STATE_CALLBACK)) {
+                 mSupportLibClient.onPageCommitVisible(mWebView, url);
+             } else {
+-                ApiHelperForM.onPageCommitVisible(mWebViewClient, mWebView, url);
++                mWebViewClient.onPageCommitVisible(mWebView, url);
+             }
+ 
+             // Record UMA for onPageCommitVisible.

@@ -1,0 +1,317 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//android_webview/system_webview_apk_tmpl.gni")
+import("//android_webview/variables.gni")
+import("//build/config/android/rules.gni")
+import("//build/config/python.gni")
+import("//device/vr/buildflags/buildflags.gni")
+import("//third_party/jni_zero/jni_zero.gni")
+
+# agree 交付开关。
+declare_args() {
+  # 是否把 32 位（armeabi-v7a）的 libwebviewchromium.so 一并打进 AAR。
+  #
+  # 默认 true：Android 7 存量设备中 32 位 / 32 位优先机型占比不低，
+  # AAR 需要双 ABI 才能覆盖。
+  #
+  # 前置条件：构建时 target_cpu = "arm64"，GN 才会生成 secondary ABI
+  # toolchain（build/config/android/abi.gni:95-107 中
+  # android_secondary_abi_cpu = "arm"）。若该 toolchain 未产出 32 位
+  # libwebviewchromium.so，把本开关置 false 退回单 ABI。
+  #
+  # 用法（args.gn）：
+  #   enable_agree_arm = false     # 只出 arm64-v8a
+  enable_agree_arm = true
+}
+
+copy("copy_snapshot_blob") {
+  sources = [ "$root_build_dir/snapshot_blob.bin" ]
+  outputs = [ "$target_gen_dir/snapshot_blob_64.bin" ]
+
+  deps = [
+    "//v8",
+    "//gin:v8_snapshot_assets",
+  ]
+}
+
+android_resources("webkit_glue_resources") {
+  sources = [
+    "java/res_webkit/layout/js_prompt.xml",
+    "java/res_webkit/layout/webview_find.xml",
+    "java/res_webkit/menu/webview_find.xml",
+  ]
+
+  deps = [ ]
+  custom_package = "agree.webkit"
+}
+
+generate_jni("draw_fn_impl_jni_headers") {
+  sources = [
+    "java/src/agree/webkit/MyDrawFunctor.java"
+  ]
+}
+
+android_library("draw_fn_impl_java") {
+  sources = [
+    "java/src/agree/webkit/MyDrawFunctor.java"
+  ]
+  srcjar_deps = [ ":draw_fn_impl_jni_headers" ]
+  # M119 的 @JNINamespace/@NativeMethods 在 //base:jni_java（独立 target，
+  # 不在 base_java 里）；生成的 MyDrawFunctorJni.java 引用
+  # org.chromium.build.annotations.CheckDiscard（//build/android:build_java）
+  # 与 org.jni_zero.JniStaticTestMocker（//third_party/jni_zero:test_mocker_java，
+  # M119 的 jni_zero 只有 test_mocker_java / native_library_loaded_status_java，
+  # 没有 M126+ 的 jni_zero_java）。
+  deps = [
+    "//base:base_java",
+    "//base:jni_java",
+    "//build/android:build_java",
+    "//third_party/jni_zero:test_mocker_java",
+  ]
+}
+
+android_library("webkit_glue_java") {
+  sources = [
+    "java/src/android/webkit/WebViewDelegateWrapper.java",
+    "java/src/agree/webkit/DownloadListener.java",
+    "java/src/agree/webkit/WebChromeClient.java",
+    "java/src/agree/webkit/RenderProcessGoneDetail.java",
+    "java/src/agree/webkit/WebViewFragment.java",
+    "java/src/agree/webkit/WebHistoryItem.java",
+    "java/src/agree/webkit/CookieManager.java",
+    "java/src/agree/webkit/TokenBindingService.java",
+    "java/src/agree/webkit/JavascriptInterface.java",
+    "java/src/agree/webkit/URLUtil.java",
+    "java/src/agree/webkit/WebMessagePort.java",
+    "java/src/agree/webkit/MyDrawFunctor.java",
+    #"java/src/agree/webkit/LegacyErrorStrings.java",
+    "java/src/agree/webkit/JsDialogHelper.java",
+    "java/src/agree/webkit/ServiceWorkerWebSettings.java",
+    "java/src/agree/webkit/HttpAuthHandler.java",
+    "java/src/agree/webkit/PermissionRequest.java",
+    "java/src/agree/webkit/ServiceWorkerController.java",
+    "java/src/agree/webkit/ConsoleMessage.java",
+    "java/src/agree/webkit/WebViewDatabase.java",
+    "java/src/agree/webkit/SslErrorHandler.java",
+    "java/src/agree/webkit/UrlInterceptRegistry.java",
+    "java/src/agree/webkit/JsPromptResult.java",
+    "java/src/agree/webkit/ServiceWorkerClient.java",
+    "java/src/agree/webkit/WebResourceResponse.java",
+    "java/src/agree/webkit/WebSyncManager.java",
+    "java/src/agree/webkit/ValueCallback.java",
+    "java/src/agree/webkit/PluginData.java",
+    "java/src/agree/webkit/PluginStub.java",
+    "java/src/agree/webkit/ClientCertRequest.java",
+    "java/src/agree/webkit/WebResourceRequest.java",
+    "java/src/agree/webkit/UrlInterceptHandler.java",
+    "java/src/agree/webkit/WebSettings.java",
+    "java/src/agree/webkit/JsResult.java",
+    "java/src/agree/webkit/CookieSyncManager.java",
+    "java/src/agree/webkit/CacheManager.java",
+    "java/src/agree/webkit/PacProcessor.java",
+    "java/src/agree/webkit/WebViewFactoryProvider.java",
+    "java/src/agree/webkit/GeolocationPermissions.java",
+    "java/src/agree/webkit/WebBackForwardList.java",
+    "java/src/agree/webkit/TracingController.java",
+    "java/src/agree/webkit/FindAddress.java",
+    "java/src/agree/webkit/WebViewClient.java",
+    "java/src/agree/webkit/WebMessage.java",
+    "java/src/agree/webkit/TracingConfig.java",
+    "java/src/agree/webkit/FindActionModeCallback.java",
+    "java/src/agree/webkit/WebViewFactory.java",
+    "java/src/agree/webkit/WebStorage.java",
+    "java/src/agree/webkit/WebIconDatabase.java",
+    "java/src/agree/webkit/SafeBrowsingResponse.java",
+    "java/src/agree/webkit/WebView.java",
+    "java/src/agree/webkit/WebViewApi26.java",
+    "java/src/agree/webkit/WebViewApi28.java",
+    "java/src/agree/webkit/WebViewApiQ.java",
+    "java/src/agree/webkit/WebViewProvider.java",
+    "java/src/agree/webkit/WebViewRenderProcess.java",
+    "java/src/agree/webkit/WebResourceError.java",
+    "java/src/agree/webkit/WebViewRenderProcessClient.java",
+  ]
+
+  deps = [
+    ":webkit_glue_resources",
+    ":draw_fn_impl_java",
+    "//third_party/androidx:androidx_annotation_annotation_java",
+    "//third_party/android_deps:com_android_support_support_annotations_java",
+    "//base:base_java",
+    "//base:jni_java",  # MyDrawFunctor 的 @JNINamespace/@NativeMethods（M119 独立 target）
+  ]
+
+
+  resources_package = "agree.webkit"
+}
+
+java_library("copy_webkit_java") {
+  supports_android = true
+  requires_android = true
+
+  deps = [
+    "//android_webview:platform_service_bridge_upstream_implementation_java",
+  ]
+
+  sources = [
+    "java/src/org/chromium/build/NativeLibraries.java",
+    "java/src/org/chromium/android_webview/ProductConfig.java",
+    "java/src/org/chromium/build/BuildConfig.java",
+  ]
+
+  srcjar_deps = [
+    "//android_webview:libwebviewchromium__jni_registration",
+  ]
+}
+
+dist_aar("webview_aar") {
+  deps = [
+    ":copy_webkit_java",
+    ":copy_snapshot_blob",
+    # agree 的 WebView 实现主体（58 个 Java 文件，含 WebView / JsDialogHelper /
+    # FindActionModeCallback 等），并通过它的 deps 把 :webkit_glue_resources
+    # 的 js_prompt / webview_find 资源一并带进 AAR。
+    # 缺这条依赖，AAR 里不会包含 agree 的任何类。
+    ":webkit_glue_java",
+    "//android_webview:pak_file_assets",
+    "//android_webview:locale_pak_assets",
+    "//android_webview:libwebviewchromium",
+    "//android_webview/glue:glue_java",
+    "//components/android_autofill/browser:java",
+    "//components/autofill/android:autofill_java",
+    "//components/autofill/core/common/mojom:mojo_types_java",
+    "//components/background_task_scheduler:background_task_scheduler_task_ids_java",
+    "//components/component_updater/android:component_provider_service_aidl_java",
+    "//components/component_updater/android:embedded_component_loader_java",
+    "//components/embedder_support/android:context_menu_java",
+    "//components/embedder_support/android:web_contents_delegate_java",
+    "//components/minidump_uploader:minidump_uploader_java",
+    "//components/policy/android:policy_java",
+    "//components/safe_browsing/android:safe_browsing_java",
+    "//services/device/public/java:geolocation_java",
+    "//third_party/androidx:androidx_privacysandbox_ads_ads_adservices_java",
+    "//third_party/androidx:androidx_privacysandbox_ads_ads_adservices_java_java",
+    "//third_party/androidx_javascriptengine:javascriptengine_common_java",
+    "//third_party/androidx_javascriptengine:javascriptengine_java",
+    "//ui/accessibility:ax_base_java",
+    "//content/public/android:content_java_resources",
+    "//third_party/icu:icu_assets",
+  ]
+
+  # 32 位库必须在 secondary ABI toolchain 下显式构建，否则 .so 不被产出，
+  # dist_aar 打包时因文件缺失而失败。
+  if (enable_agree_arm && android_64bit_target_cpu &&
+      defined(android_secondary_abi_cpu)) {
+    deps +=
+        [ "//android_webview:libwebviewchromium($android_secondary_abi_toolchain)" ]
+  }
+
+  jar_excluded_patterns = [
+    "META-INF/*",
+    "kotlin/*",
+    "kotlinx/*",
+    "org/intellij/*",
+    "org/jetbrains/annotations/*",
+    "org/checkerframework/*",
+    "androidx/*",
+    "javax/annotation/*",
+    "android/support/*",
+    "com/google/*",
+    "DebugProbesKt.bin",
+    "_COROUTINE*",
+    "*.properties",
+  ]
+  jar_included_patterns = [
+  ]
+  # 允许 AAR 携带 WebView 自身的资源（js_prompt / webview_find 的 layout、menu
+  # 以及字符串）。这些资源由 :webkit_glue_resources 生成，R 类落在
+  # agree.webkit 包下。
+  #
+  # 原值是 ["not_include_any_resources"]（weblayer 时代遗留的占位写法）：
+  # 它不是有效 glob，匹配不到任何资源，导致 AAR 一个资源都不打包，
+  # 运行时 JsDialogHelper 取 R.id.value / R.id.message 抛 NotFoundException。
+  resource_included_patterns = [
+    "res/layout/*",
+    "res/menu/*",
+    "res/values*/*",
+  ]
+
+  # AAR 交付时随包附带混淆规则（以 proguard.txt 形式进 AAR）。
+  # Chromium 有大量通过 JNI / 反射 / 序列化访问的类和成员，
+  # 不加规则会在宿主 App 开启 R8 后被剥离或改名，运行时抛
+  # NoSuchMethodError / ClassNotFoundException。
+  proguard_configs = [ "proguard.flags" ]
+
+  #generate_final_jni = true
+  #shared_resources = true
+
+  # ==========================================================================
+  # Native 库：arm64-v8a + 可选的 armeabi-v7a 双 ABI
+  #
+  # Android 7 (API 24) 存量设备中仍有 32 位 / 32 位优先机型，AAR 需要同时
+  # 携带两种 ABI 的 libwebviewchromium.so，由系统按 ro.product.cpu.abilist
+  # 自动选择。
+  #
+  # 32 位 .so 由 M119 原生的 secondary ABI toolchain 产出
+  # （build/config/android/abi.gni:95-107：target_cpu = "arm64" 时
+  # android_secondary_abi_cpu = "arm"）。它的输出目录不能靠猜，必须用
+  # get_label_info 取——这也是 build/config/android/build_vars.gni:24-29
+  # 的官方做法。
+  #
+  # 两个 .so 同名（libwebviewchromium.so），但所在 toolchain 输出目录不同，
+  # dist_aar.py 通过 abi_mapping 分别放进 jni/arm64-v8a/ 与 jni/armeabi-v7a/。
+  # ==========================================================================
+  _arm64_lib = "$root_out_dir/libwebviewchromium.so"
+
+  _enable_arm = enable_agree_arm && android_64bit_target_cpu &&
+                defined(android_secondary_abi_cpu)
+
+  if (_enable_arm) {
+    # 32 位 toolchain 的 root_out_dir（绝对路径）。
+    # get_label_info 需要一个可解析的 label，这里复用 //base，只为取目录。
+    _arm_root_out_dir =
+        get_label_info("//base($android_secondary_abi_toolchain)",
+                       "root_out_dir")
+    _arm_lib = "$_arm_root_out_dir/libwebviewchromium.so"
+
+    native_libraries = [
+      _arm64_lib,
+      _arm_lib,
+    ]
+    # GN 2121 的 foreach 只支持列表，不支持 scope 迭代；
+    # 用 scope 列表 + 成员访问（_entry.lib / _entry.abi）代替 scope 下标。
+    abi_mapping = [
+      {
+        lib = _arm64_lib
+        abi = "arm64-v8a"
+      },
+      {
+        lib = _arm_lib
+        abi = "armeabi-v7a"
+      },
+    ]
+  } else {
+    native_libraries = [ _arm64_lib ]
+  }
+
+  # The aar should only include weblayer files. The client will provide the
+  # support library.
+  #jar_included_patterns = [
+  #  "org/chromium/weblayer/*",
+  #  "org/chromium/weblayer_private/*",
+  #]
+
+  # R files are excluded because they are not used in the client lib and depend
+  # on other generated chromium R classes.
+  #jar_excluded_patterns = [
+  #  "org/chromium/weblayer/client/R\$*.class",
+  #  "org/chromium/weblayer/client/R.class",
+  #]
+
+  # dist_aar does not take the manifest from libraries in deps, so we have to
+  # specify again here.
+  android_manifest = "AndroidManifest.xml"
+  output = "$root_build_dir/agree.webkit.webview-v1.0.0.aar"
+}
