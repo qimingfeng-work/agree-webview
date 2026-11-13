@@ -1,5 +1,7 @@
 # agree webview
 
+English | [简体中文](README.zh-CN.md)
+
 **agree webview** is an embeddable WebView AAR SDK built directly from Chromium source code. Instead of relying on the device's system WebView (whose version and behaviour vary by Android release, vendor skin and Play Services updates), it packs the Chromium kernel — `libwebviewchromium.so` — inside the host app itself as a standard Android AAR. The app gets a fixed, known engine that renders identically on every supported device.
 
 - **Kernel**: Chromium **M119** (119.0.6045.214), official release build, dual ABI in one package (`arm64-v8a` + `armeabi-v7a`)
